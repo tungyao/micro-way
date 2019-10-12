@@ -1,7 +1,7 @@
 package test
 
 import (
-	g "../gate_way"
+	g "../secret"
 	"fmt"
 	"net"
 	"net/http"

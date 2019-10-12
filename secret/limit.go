@@ -1,4 +1,4 @@
-package gate_way
+package secret
 
 import (
 	"log"
@@ -40,7 +40,7 @@ func (l *limiter) Accept() (net.Conn, error) {
 		}
 		return nil, err
 	}
-	return &limitListenerConn{Conn: a, release: func() {
+	return &limitListenerConn{Conn: a, shutdown: func() {
 		<-l.accept
 	}}, nil
 }
@@ -49,18 +49,17 @@ func (l *limiter) Close() error { //这是用来关闭信道,仅仅关闭一次 
 	l.closeOnce.Do(func() {
 		close(l.close)
 	})
-	log.Print("---------------------------------------------------------")
 	return err
 }
 
 type limitListenerConn struct {
 	net.Conn
-	releaseOnce sync.Once
-	release     func()
+	shutdownOnce sync.Once
+	shutdown     func()
 }
 
 func (l *limitListenerConn) Close() error { //取出accept中的一个值,这里是继承的 net.Conn 接口, 不一样!!!
 	err := l.Conn.Close()
-	l.releaseOnce.Do(l.release)
+	l.shutdownOnce.Do(l.shutdown)
 	return err
 }
