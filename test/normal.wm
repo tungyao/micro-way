@@ -2,7 +2,7 @@
     Name=normal
     Port=4000:80
     DNS=localhost:localhost
-    Note=hello world
+    Note=hello worlds
 }
 {
 Name=wechat

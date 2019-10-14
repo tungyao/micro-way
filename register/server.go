@@ -16,9 +16,10 @@ const (
 )
 
 type ConfigFile struct {
-	Count int    `配置文件中有多少 配置文件`
-	Size  int64  `配置文件有多大`
-	Path  string `储存的具体位置`
+	Count    int    `配置文件中有多少 配置文件`
+	Size     int64  `配置文件有多大`
+	Path     string `储存的具体位置`
+	Services []*Service
 }
 type ConfigFiles struct {
 	Count      int `文件下有都个配置文件 .wm`
@@ -90,7 +91,6 @@ func checkParameter(config *Config) {
 		}
 	}
 	if config.PollingType == FILE {
-		println(config.File)
 		if config.File == "" {
 			log.Panic("Server polling type is FILE , but FILE path is nil")
 		}
@@ -110,11 +110,12 @@ func getAllConfigFile(path string) *ConfigFiles {
 		}
 		if info.Name()[len(info.Name())-3:] == ".wm" {
 			files.Count = files.Count + 1
-			ParseConfigFile(path)
+			pcf := ParseConfigFile(path)
 			files.ConfigFile = append(files.ConfigFile, ConfigFile{
-				Count: 0,
-				Size:  info.Size(),
-				Path:  path,
+				Count:    len(pcf),
+				Size:     info.Size(),
+				Path:     path,
+				Services: pcf,
 			})
 		}
 		return nil
@@ -152,19 +153,31 @@ func ParseConfigFile(path string) []*Service {
 	}
 	group := SplitString(str, []uint8{13, 10, 13, 10})
 	// 到这一部可以开始解析数据到出来
-	// service := make([]*Service, 0)
+	service := make([]*Service, 0)
 	for _, v := range group {
 		column := SplitString(v, []uint8{13, 10})
+		ser := new(Service)
 		for i := 1; i < len(column); i++ {
-			name := FindString(column[i], []byte("Name"))
+			name := FindString(column[i], []byte("Name="))
 			if name != nil {
-
+				ser.Name = string(name.([]byte))
+			}
+			port := FindString(column[i], []byte("Port="))
+			if port != nil {
+				ser.Port = string(port.([]byte))
+			}
+			dns := FindString(column[i], []byte("DNS="))
+			if dns != nil {
+				ser.DNS = string(dns.([]byte))
+			}
+			note := FindString(column[i], []byte("Note="))
+			if note != nil {
+				ser.Note = string(note.([]byte))
 			}
 		}
-
+		service = append(service, ser)
 	}
-
-	return nil
+	return service
 }
 func SplitString(str []byte, p []byte) [][]byte {
 	group := make([][]byte, 0)
@@ -186,7 +199,7 @@ func SplitString(str []byte, p []byte) [][]byte {
 			ps = append(ps, i)
 		}
 	}
-	ps = append(ps, len(str)-2)
+	ps = append(ps, len(str))
 	sto := 0
 	for i := 0; i < len(ps); i++ {
 		group = append(group, str[sto:ps[i]])
@@ -212,7 +225,7 @@ func FindString(v interface{}, p []byte) interface{} {
 				}
 			}
 			if st {
-				return bt[i+len(p)+1:]
+				return bt[i+len(p):]
 			}
 		}
 		return nil
