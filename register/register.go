@@ -1,9 +1,10 @@
 package register
 
 type Service struct {
+	Name string `service name`
 	DNS  string `localhost:localhost`
-	port string `6000:80`
-	Desc string `desc`
+	Port string `6000:80`
+	Note string `desc`
 }
 
 func NewApp() {

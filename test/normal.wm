@@ -1,0 +1,13 @@
+{
+    Name=normal
+    Port=4000:80
+    DNS=localhost:localhost
+    Note=hello world
+}
+{
+Name=wechat
+DNS=wechat:localhost
+Port = 80
+Note = hello wehchat
+}
+#name=wechat
