@@ -1,7 +1,6 @@
 package register
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -15,36 +14,28 @@ const (
 	REDIS         // 通过redis注册服务
 )
 
-type ConfigFile struct {
-	Count    int    `配置文件中有多少 配置文件`
-	Size     int64  `配置文件有多大`
-	Path     string `储存的具体位置`
-	Services []*Service
-}
-type ConfigFiles struct {
-	Count      int `文件下有都个配置文件 .wm`
-	ConfigFile []ConfigFile
-}
-type Ruler struct {
-	IsDie   bool    `是否死亡`
-	TimeOut int64   `服务超时`
-	Status  int     `服务状态 -1 宕机 , 1-100 负载状态`
-	Service Service `运行的服务`
-}
-type Config struct {
-	Address     string    `listen port : default 6000`
-	MaxCap      int       `max connect`
-	PollingType int       `polling type`
-	Redis       *net.Conn `redis connect`
-	File        string    `file path`
-}
-
 func StartServer(config Config) {
 	listen, err := net.Listen("tcp", config.Address)
 	if err != nil {
 		log.Println(err)
 	}
+	// 检查配置config的错误
 	checkParameter(&config)
+	containerMap := make(map[string]Ruler, 0)
+	// 根据config类型加载配置文件
+	switch config.PollingType {
+	case FILE:
+		containerMap = createContainer(getAllConfigFile(config.File), containerMap) // 获取配置文件
+	case REDIS:
+		log.Panic("next time")
+	case MEMORY:
+		log.Panic("next time")
+	}
+	// 到这里加载配置文件
+	// 注册中心提供服务注册和服务发现功能
+	// 注册中心解决单点故障问题
+	// 注册中心需要保存服务注册信息以及服务发现时的筛选和简单计算能力
+	LoadGlobalService(containerMap)
 	pool := NewPool(config.MaxCap)
 	go func() {
 		for {
@@ -53,13 +44,31 @@ func StartServer(config Config) {
 				log.Println(err)
 			}
 			pool.EntryChannel <- NewTask(func() error {
-				data := make([]byte, 128)
-				n, err := con.Read(data)
-				log.Println(string(data[:n]))
-				_, err = con.Write(data[:n])
-				if err != nil {
-
+				data := make([]byte, 2048) // 默认读取大小为2kb
+				nc := con
+				n, err := nc.Read(data)
+				if n == 0 {
+					_ = nc.Close()
+					return nil
 				}
+				LoadSingleService("hello", Ruler{
+					IsDie:   true,
+					TimeOut: 100,
+					Status:  -1,
+					Name:    "hello",
+					Service: &Service{
+						Name: "hello",
+						DNS:  "www.yaop.ink/hello",
+						URL:  "127.0.0.1:4000",
+						Note: "this is hello",
+					},
+				})
+
+				_, err = con.Write([]byte(containerMap[string(data[:n])].Service.DNS))
+				if err != nil {
+					log.Println(err)
+				}
+				_ = nc.Close()
 				return nil
 			})
 		}
@@ -92,9 +101,8 @@ func checkParameter(config *Config) {
 	}
 	if config.PollingType == FILE {
 		if config.File == "" {
-			log.Panic("Server polling type is FILE , but FILE path is nil")
+			log.Panic("Server polling type is FILE , but FILE path is empty")
 		}
-		getAllConfigFile(config.File)
 	}
 }
 
@@ -111,7 +119,7 @@ func getAllConfigFile(path string) *ConfigFiles {
 		if info.Name()[len(info.Name())-3:] == ".wm" {
 			files.Count = files.Count + 1
 			pcf := ParseConfigFile(path)
-			files.ConfigFile = append(files.ConfigFile, ConfigFile{
+			files.ConfigFile = append(files.ConfigFile, &ConfigFile{
 				Count:    len(pcf),
 				Size:     info.Size(),
 				Path:     path,
@@ -123,8 +131,10 @@ func getAllConfigFile(path string) *ConfigFiles {
 	if err != nil {
 		log.Panic(err)
 	}
-	fmt.Println(files)
-	return files
+	if files != nil {
+		return files
+	}
+	return nil
 }
 func ParseConfigFile(path string) []*Service {
 	f, err := os.Open(path)
@@ -162,9 +172,9 @@ func ParseConfigFile(path string) []*Service {
 			if name != nil {
 				ser.Name = string(name.([]byte))
 			}
-			port := FindString(column[i], []byte("Port="))
-			if port != nil {
-				ser.Port = string(port.([]byte))
+			url := FindString(column[i], []byte("URL="))
+			if url != nil {
+				ser.URL = string(url.([]byte))
 			}
 			dns := FindString(column[i], []byte("DNS="))
 			if dns != nil {
@@ -208,34 +218,45 @@ func SplitString(str []byte, p []byte) [][]byte {
 	return group
 }
 func FindString(v interface{}, p []byte) interface{} {
-	switch v.(type) {
-	case []byte:
-		bt := v.([]byte)
-		for i := 0; i < len(bt); i++ {
-			ist := make([]int, len(p))
-			for k, v := range p {
-				if i < len(bt)-len(p) && bt[i+k] == v {
-					ist[k] = 1
-				}
-			}
-			st := true
-			for _, v := range ist {
-				if v != 1 {
-					st = false
-				}
-			}
-			if st {
-				return bt[i+len(p):]
+	// switch v.(type) {
+	// case []byte:
+	bt := v.([]byte)
+	for i := 0; i < len(bt); i++ {
+		ist := make([]int, len(p))
+		for k, v := range p {
+			if i < len(bt)-len(p) && bt[i+k] == v {
+				ist[k] = 1
 			}
 		}
-		return nil
-	case string:
-		// sr := v.(string)
+		st := true
+		for _, v := range ist {
+			if v != 1 {
+				st = false
+			}
+		}
+		if st {
+			return bt[i+len(p):]
+		}
 	}
 	return nil
+	// case string:
+	// 	sr := v.(string)
+	// }
+	// return nil
 }
 
-// 更安全的分配内存
-func malloc(v interface{}) {
-
+// 建立一个大型容器来运行，增加，删除容器
+func createContainer(configs *ConfigFiles, mp map[string]Ruler) map[string]Ruler {
+	for i := 0; i < len(configs.ConfigFile); i++ {
+		for _, v := range configs.ConfigFile[i].Services {
+			mp[v.Name] = Ruler{
+				IsDie:   true,
+				TimeOut: 100,
+				Name:    v.Name,
+				Status:  -1,
+				Service: v,
+			}
+		}
+	}
+	return mp
 }

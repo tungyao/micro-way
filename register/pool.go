@@ -1,5 +1,9 @@
 package register
 
+import (
+	"log"
+)
+
 type Task struct {
 	f func() error
 }
@@ -10,7 +14,10 @@ func NewTask(f func() error) *Task {
 	return &t
 }
 func (t *Task) Execute() {
-	_ = t.f()
+	err := t.f()
+	if err != nil {
+		log.Panic(err)
+	}
 }
 
 type FPool struct {

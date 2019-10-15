@@ -13,5 +13,5 @@ func TestPool2(t *testing.T) {
 	})
 }
 func TestPool3(t *testing.T) {
-	register.StartClient()
+	register.StartClient("normal")
 }
