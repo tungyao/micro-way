@@ -1,6 +1,7 @@
 package register
 
 import (
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -21,7 +22,7 @@ func StartServer(config Config) {
 	}
 	// 检查配置config的错误
 	checkParameter(&config)
-	containerMap := make(map[string]Ruler, 0)
+	containerMap := make(map[string]*Ruler, 0)
 	// 根据config类型加载配置文件
 	switch config.PollingType {
 	case FILE:
@@ -63,7 +64,8 @@ func StartServer(config Config) {
 						Note: "this is hello",
 					},
 				})
-
+				a, v := GetStatusSingleService("wechat")
+				fmt.Println(a, v)
 				_, err = con.Write([]byte(containerMap[string(data[:n])].Service.DNS))
 				if err != nil {
 					log.Println(err)
@@ -246,10 +248,10 @@ func FindString(v interface{}, p []byte) interface{} {
 }
 
 // 建立一个大型容器来运行，增加，删除容器
-func createContainer(configs *ConfigFiles, mp map[string]Ruler) map[string]Ruler {
+func createContainer(configs *ConfigFiles, mp map[string]*Ruler) map[string]*Ruler {
 	for i := 0; i < len(configs.ConfigFile); i++ {
 		for _, v := range configs.ConfigFile[i].Services {
-			mp[v.Name] = Ruler{
+			mp[v.Name] = &Ruler{
 				IsDie:   true,
 				TimeOut: 100,
 				Name:    v.Name,
@@ -259,4 +261,8 @@ func createContainer(configs *ConfigFiles, mp map[string]Ruler) map[string]Ruler
 		}
 	}
 	return mp
+}
+
+func MonitorService() { // 监控服务 状态
+
 }

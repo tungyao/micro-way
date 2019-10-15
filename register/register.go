@@ -2,8 +2,6 @@ package register
 
 import (
 	"fmt"
-	"os"
-	"os/exec"
 )
 
 // 设计 每一个 服务 都是一个单独channel
@@ -11,7 +9,7 @@ import (
 
 var Containers = new(Container) // 所有 service 容器 都存放在这里 有没有问题 ,我不知道
 
-func LoadGlobalService(rulers map[string]Ruler) { // 从全局加载文件
+func LoadGlobalService(rulers map[string]*Ruler) { // 从全局加载文件
 	names := make([]string, 0)
 	for k, v := range rulers {
 		names = append(names, k)
@@ -33,20 +31,24 @@ func LoadSingleService(serviceName string, ruler Ruler) bool { // 手动 或者 
 	}
 	fmt.Println("=>\tNew Service is registering =>", serviceName)
 	Containers.mux.Lock()
-	defer Containers.mux.Unlock()
 	Containers.Number = Containers.Number + 1
-	Containers.Rulers = append(Containers.Rulers, ruler)
-	FlushScreen()
+	Containers.Rulers = append(Containers.Rulers, &ruler)
+	Containers.mux.Unlock()
 	return true
 }
-func GetStatusSingleService(serviceName string) { // 获取 单个 服务 状态 , 用户 可以 调用
-
+func GetStatusSingleService(serviceName string) (bool, int) { // 获取 单个 服务 状态 , 用户 可以 调用  返回值 isDie , status
+	for _, v := range Containers.Rulers {
+		if v != nil {
+			if v.Name == serviceName {
+				return v.IsDie, v.Status
+			}
+		}
+	}
+	return true, 0
 }
 func SetStatusSingleService(serviceName string) { // 设置单个 服务 状态 , 用户 禁止调用
 
 }
 func FlushScreen() {
-	cmd := exec.Command("cls")
-	cmd.Stdout = os.Stdout
-	_ = cmd.Run()
+
 }

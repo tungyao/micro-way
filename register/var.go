@@ -40,6 +40,11 @@ type Config struct {
 // 存放 service 容器
 type Container struct {
 	mux    sync.Mutex
-	Rulers []Ruler
+	Rulers []*Ruler
 	Number int
+}
+
+type Monitor struct {
+	Mux  sync.Mutex
+	Sort []int `直接排序`
 }
