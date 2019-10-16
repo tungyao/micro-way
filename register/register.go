@@ -7,42 +7,42 @@ import (
 // 设计 每一个 服务 都是一个单独channel
 // chan *Service
 
-var Containers = new(Container) // 所有 service 容器 都存放在这里 有没有问题 ,我不知道
+var GlobalContainer = new(Container) // 所有 service 容器 都存放在这里 有没有问题 ,我不知道
+var GlobalPosition map[string]int = make(map[string]int)
 
 func LoadGlobalService(rulers map[string]*Ruler) { // 从全局加载文件
 	names := make([]string, 0)
 	for k, v := range rulers {
 		names = append(names, k)
-		Containers.Number = Containers.Number + 1
-		Containers.Rulers = append(Containers.Rulers, v)
+		GlobalContainer.Number = GlobalContainer.Number + 1
+		GlobalPosition[k] = GlobalContainer.Number
+		GlobalContainer.Rulers = append(GlobalContainer.Rulers, v)
 	}
-	fmt.Print("\n------------------------------------\n|\tContainer have *", Containers.Number, "* Services\t\t|\n------------------------------------")
+	fmt.Print("\n------------------------------------\n|\tContainer have *", GlobalContainer.Number, "* Services\t\t|\n------------------------------------")
 	for k, v := range names {
 		fmt.Print("\n|\tService ", k, "\t\t\t", v, "\t\t|\n------------------------------------")
 	}
 	fmt.Println("\n\t\t\tIT'S STARTING ....")
 }
 func LoadSingleService(serviceName string, ruler Ruler) bool { // 手动 或者 新发现服务 注册服务 调用
-	for _, v := range Containers.Rulers {
+	for _, v := range GlobalContainer.Rulers {
 		if v.Name == serviceName {
 			fmt.Println("=>\tNew Service has be registered =>", v.Name)
 			return false
 		}
 	}
 	fmt.Println("=>\tNew Service is registering =>", serviceName)
-	Containers.mux.Lock()
-	Containers.Number = Containers.Number + 1
-	Containers.Rulers = append(Containers.Rulers, &ruler)
-	Containers.mux.Unlock()
+	GlobalContainer.mux.Lock()
+	GlobalContainer.Number = GlobalContainer.Number + 1
+	GlobalContainer.Rulers = append(GlobalContainer.Rulers, &ruler)
+	GlobalContainer.mux.Unlock()
 	return true
 }
+
+// issues 频繁得调用 不知道会不会出现问题
 func GetStatusSingleService(serviceName string) (bool, int) { // 获取 单个 服务 状态 , 用户 可以 调用  返回值 isDie , status
-	for _, v := range Containers.Rulers {
-		if v != nil {
-			if v.Name == serviceName {
-				return v.IsDie, v.Status
-			}
-		}
+	if GlobalPosition[serviceName] != 0 {
+		return GlobalContainer.Rulers[GlobalPosition[serviceName]-1].IsDie, GlobalContainer.Rulers[GlobalPosition[serviceName]-1].Status
 	}
 	return true, 0
 }
