@@ -1,6 +1,8 @@
 package register
 
 import (
+	"crypto/sha1"
+	"fmt"
 	"net"
 	"sync"
 )
@@ -47,4 +49,11 @@ type Container struct {
 type Monitor struct {
 	Mux  sync.Mutex
 	Sort []int `直接排序`
+}
+
+func MD(s string) string {
+	Sha1Inst := sha1.New()
+	Sha1Inst.Write([]byte(s))
+	Result := Sha1Inst.Sum([]byte(""))
+	return fmt.Sprintf("%x", Result)
 }

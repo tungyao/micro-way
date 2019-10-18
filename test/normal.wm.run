@@ -1,0 +1,13 @@
+{*
+    Name=normal-
+    URL=4000:80-
+    DNS=localhost:localhost-
+    Note=hello worlds-
+}-
+{-
+Name=wechat-
+DNS=wechat:localhost-
+URL = 80-
+Note = hello wehchat-
+}-
+#name123asasddasd

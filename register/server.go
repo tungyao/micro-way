@@ -2,6 +2,7 @@ package register
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -75,6 +76,7 @@ func StartServer(config Config) {
 			})
 		}
 	}()
+	StatusConfigFile(config)
 	pool.Run()
 }
 
@@ -108,10 +110,10 @@ func checkParameter(config *Config) {
 	}
 }
 
-// 获取配置文件夹下的配置文件
+// 获取配置文件夹下的配置文件 并且创建 运行文件
 func getAllConfigFile(path string) *ConfigFiles {
 	files := new(ConfigFiles)
-	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(path, func(p string, info os.FileInfo, err error) error {
 		if info == nil {
 			return err
 		}
@@ -119,12 +121,22 @@ func getAllConfigFile(path string) *ConfigFiles {
 			return nil
 		}
 		if info.Name()[len(info.Name())-3:] == ".wm" {
+			f, err := os.Open(p)
+			if err != nil {
+				log.Panicln(err)
+			}
+			data, _ := ioutil.ReadAll(f)
+			for k, v := range data {
+				data[k] = v << 1
+			}
+			_ = ioutil.WriteFile(p+".run", data, 766)
+			_ = f.Close()
 			files.Count = files.Count + 1
-			pcf := ParseConfigFile(path)
+			pcf := ParseConfigFile(p)
 			files.ConfigFile = append(files.ConfigFile, &ConfigFile{
 				Count:    len(pcf),
 				Size:     info.Size(),
-				Path:     path,
+				Path:     p,
 				Services: pcf,
 			})
 		}
@@ -262,7 +274,6 @@ func createContainer(configs *ConfigFiles, mp map[string]*Ruler) map[string]*Rul
 	}
 	return mp
 }
-
 func MonitorService() { // 监控服务 状态
 
 }
