@@ -13,5 +13,10 @@ func TestPool2(t *testing.T) {
 	})
 }
 func TestPool3(t *testing.T) {
-	register.StartClient("normal")
+	// register.StartClient("normal")
+	register.StartPolling(3, register.Config{
+		Address: ":6000",
+		MaxCap:  1000,
+		File:    `D:\Tung\Github\micro-way\test`,
+	})
 }
