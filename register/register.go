@@ -6,7 +6,6 @@ import (
 
 // 设计 每一个 服务 都是一个单独channel
 // chan *Service
-
 var GlobalContainer = new(Container) // 所有 service 容器 都存放在这里 有没有问题 ,我不知道
 var GlobalPosition map[string]int = make(map[string]int)
 var GlobalMdString map[string]string = make(map[string]string)

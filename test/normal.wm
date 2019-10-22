@@ -2,12 +2,14 @@
     Name=normal
     URL=4000:80
     DNS=localhost:localhost
+    Method=GET
     Note=hello worlds
 }
 {
 Name=wechat
 DNS=wechat:localhost
 URL = 80
+Method=GET
 Note = hello wehchat
 }
 #name123asasddasd

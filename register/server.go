@@ -1,7 +1,6 @@
 package register
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
@@ -37,7 +36,10 @@ func StartServer(config Config) {
 	// 注册中心提供服务注册和服务发现功能
 	// 注册中心解决单点故障问题
 	// 注册中心需要保存服务注册信息以及服务发现时的筛选和简单计算能力
+
+	// 加载配置文件
 	LoadGlobalService(containerMap)
+	// 开启线程池
 	pool := NewPool(config.MaxCap)
 	go func() {
 		for {
@@ -48,35 +50,37 @@ func StartServer(config Config) {
 			pool.EntryChannel <- NewTask(func() error {
 				data := make([]byte, 2048) // 默认读取大小为2kb
 				nc := con
-				n, err := nc.Read(data)
+				n, _ := nc.Read(data)
 				if n == 0 {
 					_ = nc.Close()
 					return nil
 				}
-				LoadSingleService("hello", Ruler{
-					IsDie:   true,
-					TimeOut: 100,
-					Status:  -1,
-					Name:    "hello",
-					Service: &Service{
-						Name: "hello",
-						DNS:  "www.yaop.ink/hello",
-						URL:  "127.0.0.1:4000",
-						Note: "this is hello",
-					},
-				})
-				a, v := GetStatusSingleService("wechat")
-				fmt.Println(a, v)
-				_, err = con.Write([]byte(containerMap[string(data[:n])].Service.DNS))
-				if err != nil {
-					log.Println(err)
-				}
-				_ = nc.Close()
+				_, _ = nc.Write(data)
+				// LoadSingleService("hello", Ruler{
+				// 	IsDie:   true,
+				// 	TimeOut: 100,
+				// 	Status:  -1,
+				// 	Name:    "hello",
+				// 	Service: &Service{
+				// 		Name: "hello",
+				// 		DNS:  "www.yaop.ink/hello",
+				// 		URL:  "127.0.0.1:4000",
+				// 		Note: "this is hello",
+				// 	},
+				// })
+				// a, v := GetStatusSingleService("wechat")
+				// fmt.Println(a, v)
+				// _, err = con.Write([]byte(containerMap[string(data[:n])].Service.DNS))
+				// if err != nil {
+				// 	log.Println(err)
+				// }
+				// _ = nc.Close()
 				return nil
 			})
 		}
 	}()
-	StatusConfigFile(config)
+	// 开启文件轮询模式
+	CheckConfigFile(config)
 	pool.Run()
 }
 
@@ -198,6 +202,13 @@ func ParseConfigFile(path string) []*Service {
 			if note != nil {
 				ser.Note = string(note.([]byte))
 			}
+			method := FindString(column[i], []byte("Method="))
+			if method != nil {
+				ser.Method = string(note.([]byte))
+			} else {
+				ser.Method = "GET"
+			}
+
 		}
 		service = append(service, ser)
 	}
@@ -273,7 +284,4 @@ func createContainer(configs *ConfigFiles, mp map[string]*Ruler) map[string]*Rul
 		}
 	}
 	return mp
-}
-func MonitorService() { // 监控服务 状态
-
 }
