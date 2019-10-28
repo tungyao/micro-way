@@ -1,13 +1,14 @@
 package test
 
 import (
-	g "../secret"
 	"fmt"
 	"net"
 	"net/http"
 	"sync/atomic"
 	"testing"
 	"time"
+
+	g "../gate_way"
 )
 
 func TestGateWay(t *testing.T) {
@@ -16,7 +17,7 @@ func TestGateWay(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	l = g.Limiter(1000, l)
+	l = g.Limiter(g.Config{MaxConn: 2000}, l)
 	var open int32
 	http.Serve(l, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if n := atomic.AddInt32(&open, 1); n > 5 {
