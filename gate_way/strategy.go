@@ -1,4 +1,4 @@
-package secret
+package gate_way
 
 func main() {
 

@@ -1,4 +1,4 @@
-package secret
+package gate_way
 
 import (
 	"log"
@@ -12,6 +12,9 @@ type limiter struct {
 	closeOnce sync.Once
 	close     chan struct{}
 }
+type Config struct {
+	MaxConn int `默认为2000`
+}
 
 func (l *limiter) wait() bool {
 	select {
@@ -24,10 +27,10 @@ func (l *limiter) wait() bool {
 	}
 
 }
-func Limiter(max int, listener net.Listener) net.Listener {
+func Limiter(config Config, listener net.Listener) net.Listener {
 	return &limiter{
 		Listener: listener,
-		accept:   make(chan struct{}, max), //TODO 通过信道缓冲容量,来限制访问数量
+		accept:   make(chan struct{}, config.MaxConn), //TODO 通过信道缓冲容量,来限制访问数量
 		close:    make(chan struct{}),
 	}
 }
