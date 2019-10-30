@@ -17,7 +17,7 @@ func TestGateWay(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	l = g.Limiter(g.Config{MaxConn: 2000}, l)
+	l = g.Limiter(&g.Config{MaxConn: 2000}, l)
 	var open int32
 	http.Serve(l, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if n := atomic.AddInt32(&open, 1); n > 5 {

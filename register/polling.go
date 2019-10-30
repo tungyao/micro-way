@@ -142,9 +142,10 @@ func URLMonitor() int {
 	}
 	return 0
 }
-func sendReq(method string, url string, body io.Reader) {
+func sendReq(method string, url string, body io.Reader) (*http.Request, error) {
 	req, err := http.NewRequest(strings.ToUpper(method), url, body)
 	if err != nil {
-		return nil, err
+		return nil, nil
 	}
+	return req, err
 }

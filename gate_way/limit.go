@@ -5,6 +5,8 @@ import (
 	"log"
 	"net"
 	"sync"
+
+	"./util"
 )
 
 var FLOW chan int
@@ -17,8 +19,8 @@ type limiter struct {
 	close     chan struct{}
 }
 type Config struct {
-	MaxConn     int `default value => 2000`
-	MaxBuffFlow int `max flow buff regin ,default 2kb`
+	MaxConn     int `default value => 4096`
+	MaxBuffFlow int `max flow buff regin ,default 4kb ,but you can use bigest`
 }
 
 func (l *limiter) wait() bool {
@@ -30,20 +32,17 @@ func (l *limiter) wait() bool {
 		//log.Print(l.Addr()," is accept")
 		return true
 	}
-
 }
-func Limiter(config Config, listener net.Listener) net.Listener {
-	if config.MaxConn == 0 {
-		config.MaxConn = 2000
-	}
-	if config.MaxBuffFlow == 0 {
-		config.MaxBuffFlow = 2048
-	}
+func Limiter(config *Config, listener net.Listener) net.Listener {
+	util.CheckConfig(config, Config{
+		MaxConn:     4096,
+		MaxBuffFlow: 4096,
+	})
 	FLOW = make(chan int, config.MaxBuffFlow)
 
 	return &limiter{
 		Listener: listener,
-		accept:   make(chan struct{}, config.MaxConn), //TODO 通过信道缓冲容量,来限制访问数量
+		accept:   make(chan struct{}, config.MaxConn), // Limit the number of accesses by channel buffer capacity
 		close:    make(chan struct{}),
 	}
 }
@@ -65,7 +64,7 @@ func (l *limiter) Accept() (net.Conn, error) {
 		<-l.accept
 	}}, nil
 }
-func (l *limiter) Close() error { //这是用来关闭信道,仅仅关闭一次 , 请注意,这是继承的 net.Listener接口
+func (l *limiter) Close() error { // This is used to close the channel, just close once, please note that this is the inherited net.listener interface
 	err := l.Listener.Close()
 	l.closeOnce.Do(func() {
 		close(l.close)
@@ -80,6 +79,7 @@ type limitListenerConn struct {
 }
 
 func (l *limitListenerConn) Read(b []byte) (n int, err error) {
+	fmt.Println(string(b))
 	n, err = l.Conn.Read(b)
 	FLOW <- n
 	return n, err
@@ -88,7 +88,7 @@ func (l *limitListenerConn) Write(b []byte) (n int, err error) {
 	FLOW <- len(b)
 	return l.Conn.Write(b)
 }
-func (l *limitListenerConn) Close() error { //取出accept中的一个值,这里是继承的 net.Conn 接口, 不一样!!!
+func (l *limitListenerConn) Close() error { // Take out a value in accept, here is the inherited net.conn interface, not the same!!!
 	err := l.Conn.Close()
 	l.shutdownOnce.Do(l.shutdown)
 	return err
