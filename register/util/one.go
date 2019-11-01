@@ -49,5 +49,24 @@ func CheckConfig(nw interface{}, deflt interface{}) {
 		}
 
 	}
-
+}
+func SplitString(str []byte, p []byte) [][]byte {
+	group := make([][]byte, 0)
+	for i := 0; i < len(str); i++ {
+		if str[i] == p[0] && i < len(str)-len(p) {
+			if len(p) == 1 {
+				return [][]byte{str[:i+1], str[i:]}
+			} else {
+				for j := 1; j < len(p); i++ {
+					if str[i+j] != p[j] {
+						continue
+					}
+					return [][]byte{str[:i], str[i+len(p):]}
+				}
+			}
+		} else {
+			continue
+		}
+	}
+	return group
 }

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"io"
 	"log"
+	"net"
 	"os"
 	"strconv"
 	"strings"
@@ -24,29 +25,73 @@ type ADL struct {
 	Frequency int
 }
 type BlackShieldConfig struct {
-	LoadBlackPath   string `load black file path`
-	MonitorInterval int
+	LoadBlackPath    string `load black file path`
+	MonitorInterval  int
+	MonitoringPeriod int
+	MonitorPipebuf   int `default 2048`
+	MonitorPeriosBuf int `default 10240 ,`
+}
+type Black struct {
+	net.Listener
+	l net.Listener
 }
 
 var (
-	AccessDefineList    map[string]int // use it to monitor black list
-	AccessDefineListNew map[string]int
-	MonitoringPeriod    int         // second , default 5s
-	MonitorInterval     int         // second , default 5s
-	MonitorPipe         chan func() // yes ,use chan to monitor data
+	AccessDefineList     map[string]int // use it to monitor black list
+	AccessDefineListNew  map[string]int
+	MonitoringPeriod     int         // second , default 5s
+	MonitorInterval      int         // second , default 3s
+	MonitorPipe          chan func() // yes ,use chan to monitor data
+	MonitorLastTime      int
+	MonitoringPeriodTime int
+	Break                bool
+	emptySlice           []string
+	MonitorPeriosBuf     int
 )
 
 // init func ,find of local file ,name with *.black
-func StartBlackShield(config *BlackShieldConfig) {
-	util.CheckConfig(config, BlackShieldConfig{LoadBlackPath: "./black.lst"})
+func StartBlackShield(config *BlackShieldConfig, l net.Listener) *Black {
+	util.CheckConfig(config, BlackShieldConfig{MonitorPeriosBuf: 10240, LoadBlackPath: "./black.lst", MonitorPipebuf: 2048, MonitoringPeriod: 5, MonitorInterval: 5})
 	loadList(config)
-	go func() {
-		for {
+	MonitorPipe = make(chan func(), config.MonitorPipebuf)
+	MonitoringPeriod = config.MonitoringPeriod
+	MonitorInterval = config.MonitorInterval
+	MonitorPeriosBuf = config.MonitorPeriosBuf
 
-			time.Sleep(time.Second * time.Duration(config.MonitorInterval))
+	go func() {
+		for k := range MonitorPipe {
+			k()
 		}
 	}()
+	// During the independent control of threads to keep reading
+	go func() {
+		for {
+			Break = false
+			BlackShieldAlg(emptySlice)
+			time.Sleep(time.Second * time.Duration(MonitorInterval))
+			Break = true
+			emptySlice = make([]string, 0)
+			time.Sleep(time.Second * time.Duration(MonitoringPeriod))
+		}
+	}()
+	return &Black{
+		l: l,
+	}
 }
+func (b *Black) Next() net.Listener {
+	return b
+}
+func (b *Black) Accept() (net.Conn, error) {
+	a, err := b.l.Accept()
+	if Break {
+		MonitorPipe <- func() {
+			SendFlow(a.RemoteAddr().String())
+		}
+	}
+	return a, err
+}
+
+// read black list from local file
 func loadList(config *BlackShieldConfig) {
 	f, err := os.OpenFile(config.LoadBlackPath, os.O_CREATE|os.O_RDONLY, 777)
 	if err != nil {
@@ -66,12 +111,19 @@ func loadList(config *BlackShieldConfig) {
 			}
 		}
 	}
-
 }
 
 // core algorithm
-func BlackShieldAlg(ip string) {
-	if ips := AccessDefineList[ip]; ips > 8 {
+func BlackShieldAlg(s []string) {
+	// for k,v:=range s{
+	// 	fmt.Println(k,v)
+	// }
+}
 
+// send ip address to algorithm and get threat index
+// we should create a new slice every time ,until the free
+func SendFlow(ip string) {
+	if len(emptySlice) <= MonitorPeriosBuf {
+		emptySlice = append(emptySlice, ip)
 	}
 }

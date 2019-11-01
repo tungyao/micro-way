@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
 
 	g "../gate_way"
+	u "../gate_way/util"
 )
 
 func TestGateWay(t *testing.T) {
@@ -18,6 +20,7 @@ func TestGateWay(t *testing.T) {
 		t.Fatal(err)
 	}
 	l = g.Limiter(&g.Config{MaxConn: 2000}, l)
+	l = g.StartBlackShield(&g.BlackShieldConfig{}, l).Next()
 	var open int32
 	http.Serve(l, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if n := atomic.AddInt32(&open, 1); n > 5 {
@@ -27,4 +30,14 @@ func TestGateWay(t *testing.T) {
 		defer atomic.AddInt32(&open, -1)
 		_, _ = fmt.Fprint(w, "some body")
 	}))
+}
+func TestSplit(t *testing.T) {
+	for i := 0; i < 10000000; i++ {
+		strings.Split("127.0.0.1:61142", ":")
+	}
+}
+func TestSplit2(t *testing.T) {
+	for i := 0; i < 10000000; i++ {
+		u.SplitString([]byte("ashdahs**djhajksd"), []byte("**"))
+	}
 }

@@ -1,8 +1,6 @@
 package gate_way
 
 import (
-	"fmt"
-	"log"
 	"net"
 	"sync"
 
@@ -26,10 +24,8 @@ type Config struct {
 func (l *limiter) wait() bool {
 	select {
 	case <-l.close:
-		log.Print(l.Addr(), " is close")
 		return false
 	case l.accept <- struct{}{}:
-		//log.Print(l.Addr()," is accept")
 		return true
 	}
 }
@@ -39,7 +35,6 @@ func Limiter(config *Config, listener net.Listener) net.Listener {
 		MaxBuffFlow: 4096,
 	})
 	FLOW = make(chan int, config.MaxBuffFlow)
-
 	return &limiter{
 		Listener: listener,
 		accept:   make(chan struct{}, config.MaxConn), // Limit the number of accesses by channel buffer capacity
@@ -53,13 +48,13 @@ func (l *limiter) Accept() (net.Conn, error) {
 		if t {
 			<-l.accept
 		}
+
 		return nil, err
 	}
 	return &limitListenerConn{Conn: a, shutdown: func() {
 		n := <-FLOW
 		if n != 0 {
 			l.Flow += int64(n)
-			fmt.Println(l.Flow)
 		}
 		<-l.accept
 	}}, nil
@@ -79,7 +74,6 @@ type limitListenerConn struct {
 }
 
 func (l *limitListenerConn) Read(b []byte) (n int, err error) {
-	fmt.Println(string(b))
 	n, err = l.Conn.Read(b)
 	FLOW <- n
 	return n, err
