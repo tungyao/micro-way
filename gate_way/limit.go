@@ -43,6 +43,7 @@ func Limiter(config *Config, listener net.Listener) net.Listener {
 }
 func (l *limiter) Accept() (net.Conn, error) {
 	t := l.wait()
+	// fmt.Println(l.Flow)
 	a, err := l.Listener.Accept()
 	if err != nil {
 		if t {

@@ -2,6 +2,7 @@ package gate_way
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"log"
 	"net"
@@ -118,6 +119,7 @@ func BlackShieldAlg(s []string) {
 	// for k,v:=range s{
 	// 	fmt.Println(k,v)
 	// }
+	fmt.Println("BLACK LIST IS RUNNING")
 }
 
 // send ip address to algorithm and get threat index
