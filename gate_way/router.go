@@ -1,6 +1,8 @@
 package gate_way
 
 import (
+	"io"
+	"log"
 	"net"
 	"net/http"
 
@@ -29,10 +31,10 @@ type RT struct {
 var (
 	GLOBAL_ALL_CONNECT int
 	FPOOL              *FPool
-	registerLocation   *string
-	timeOut            *int
-	isCache            *bool
-	cacheTime          *int
+	registerLocation   string
+	timeOut            int
+	isCache            bool
+	cacheTime          int
 )
 
 // We need to get routing information from the registry
@@ -40,46 +42,53 @@ var (
 // in 0.1 version
 func StartRouter(config *WayConfig) {
 	util.CheckConfig(config, WayConfig{
-		RegisterLocation: "localhost:81",
+		RegisterLocation: "localhost:6000",
 		TimeOut:          60,
 		IsCache:          true,
 		CacheTime:        10,
 	})
-	util.CheckConfig(registerLocation, config.RegisterLocation)
-	util.CheckConfig(timeOut, config.TimeOut)
-	util.CheckConfig(isCache, config.IsCache)
-	util.CheckConfig(cacheTime, config.CacheTime)
+	util.CheckConfig(&registerLocation, config.RegisterLocation)
+	util.CheckConfig(&timeOut, config.TimeOut)
+	util.CheckConfig(&isCache, config.IsCache)
+	util.CheckConfig(&cacheTime, config.CacheTime)
 }
 func (rt *RT) Router() http.Handler {
-
 	return rt
 }
 func (rt *RT) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	sendRouter(w, r)
 }
 func sendRouter(w http.ResponseWriter, r *http.Request) {
-	n, err := net.Dial("tcp", *registerLocation)
+	n, err := net.Dial("tcp", registerLocation)
+	defer n.Close()
+	w.Header().Set("Content-Type", "application/json")
 	if err != nil {
-		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(501)
 		_, _ = w.Write(template(501))
 	}
+	data := make([]byte, 2048)
+	nn, err := r.Body.Read(data)
+	_ = r.Body.Close()
+	if err != nil && err != io.EOF {
+		log.Println("router.go -> 71", err)
+	}
+	_, _ = n.Write(data[:nn])
+
+	data = make([]byte, 4096)
+	nn, err = n.Read(data)
+
+	if err != nil {
+		log.Println("router.go -> 79", err)
+	}
+	// getObj := tjson.Decode(data[:nn])
+	_, _ = w.Write(data[:nn])
 }
 func template(n int) []byte {
 	switch n {
 	case 501:
-		return []byte(`<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
-<h1>Connect Service Error</h1>
-</body>
-</html>`)
+		return []byte(`{"error":"501"}`)
 	}
-	return []byte("not found")
+	return []byte(`{"error":"not found"}`)
 }
 
 // Initialize parameters

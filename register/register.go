@@ -41,7 +41,7 @@ func LoadSingleService(serviceName string, ruler Ruler) bool { // 手动 或者 
 }
 
 // issues 频繁得调用 不知道会不会出现问题
-func GetStatusSingleService(serviceName string) (bool, int) { // 获取 单个 服务 状态 , 用户 可以 调用  返回值 isDie , status
+func GetStatusSingleService(serviceName string) (bool, int, *Service) { // 获取 单个 服务 状态 , 用户 可以 调用  返回值 isDie , status
 	gd := GlobalMdString[serviceName]
 	if GlobalPosition[gd] != 0 {
 		return GlobalContainer.
@@ -49,9 +49,12 @@ func GetStatusSingleService(serviceName string) (bool, int) { // 获取 单个 �
 				IsDie,
 			GlobalContainer.
 				Rulers[GlobalPosition[gd]-1].
-				Status
+				Status,
+			GlobalContainer.
+				Rulers[GlobalPosition[gd]-1].Service
+
 	}
-	return true, -2
+	return true, -2, nil
 }
 func SetStatusSingleService(serviceName string) { // 设置单个 服务 状态 , 用户 禁止调用  设置服务状态 返回时延
 

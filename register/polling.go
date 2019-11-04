@@ -85,7 +85,6 @@ func Diff(a []byte, b []byte) bool { // 直接对比 每一行
 			}
 		}
 		if len(out) != 0 {
-			println(string(a))
 			return false
 		}
 	} else if len(og) == len(dt) {
@@ -137,9 +136,9 @@ func StartMonitorService() {
 
 //  return number more small ,service is more health
 func URLMonitor() int {
-	for k, v := range GlobalContainer.Rulers {
-
-	}
+	// for k, v := range GlobalContainer.Rulers {
+	//
+	// }
 	return 0
 }
 func sendReq(method string, url string, body io.Reader) (*http.Request, error) {

@@ -1,15 +1,17 @@
 {
     Name=normal
-    URL=4000:80
+    URL=localhost:81
     DNS=localhost:localhost
-    Method=GET
+    Method=POST
     Note=hello worlds
+    PassWord=1121331
 }
+
 {
 Name=wechat
 DNS=wechat:localhost
-URL = 80
-Method=GET
+URL = http://localhost:80
+Method=POST
 Note = hello wehchat
 }
 #name123asasddasd

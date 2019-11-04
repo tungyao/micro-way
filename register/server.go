@@ -4,8 +4,12 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
+
+	"github.com/tungyao/tjson"
 )
 
 // server default port 6000
@@ -48,14 +52,14 @@ func StartServer(config Config) {
 				log.Println(err)
 			}
 			pool.EntryChannel <- NewTask(func() error {
-				data := make([]byte, 2048) // 默认读取大小为2kb
+				data := make([]byte, 4098) // 默认读取大小为2kb
 				nc := con
 				n, _ := nc.Read(data)
 				if n == 0 {
 					_ = nc.Close()
 					return nil
 				}
-				_, _ = nc.Write(data)
+				get := tjson.Decode(data[:n])
 				// LoadSingleService("hello", Ruler{
 				// 	IsDie:   true,
 				// 	TimeOut: 100,
@@ -68,14 +72,30 @@ func StartServer(config Config) {
 				// 		Note: "this is hello",
 				// 	},
 				// })
-				// a, v := GetStatusSingleService("wechat")
-				// fmt.Println(a, v)
-				// _, err = con.Write([]byte(containerMap[string(data[:n])].Service.DNS))
-				// if err != nil {
-				// 	log.Println(err)
-				// }
-				// _ = nc.Close()
-				return nil
+				if get["pass"] == nil {
+					_, err = nc.Write([]byte(tjson.Encode(map[string]interface{}{
+						"ok":     "no",
+						"msg":    "get pass is failed",
+						"is_die": true,
+						"status": -1,
+						"url":    "nil",
+						"method": "GET",
+						"name":   "nil",
+					})))
+					err = nc.Close()
+					return err
+				}
+				d, t, s := GetStatusSingleService(get["pass"].(string))
+				if d {
+					data := getRestData(s.URL, strings.ToUpper(s.Method), string(data[:n]))
+					_, err = nc.Write([]byte(tjson.Encode(map[string]interface{}{
+						"ok":     "yes",
+						"status": t,
+						"data":   data,
+					})))
+				}
+				err = nc.Close()
+				return err
 			})
 		}
 	}()
@@ -89,6 +109,20 @@ func runFile() {
 }
 func Memory() {
 
+}
+func getRestData(url string, method string, body string) []byte {
+	n := &http.Response{}
+	switch method {
+	case "GET":
+		n, _ = http.Get(url)
+	case "POST":
+		n, _ = http.Post(url, "application/json", strings.NewReader(body))
+	}
+	data, er := ioutil.ReadAll(n.Body)
+	if er != nil {
+		log.Println("server -> 132", er)
+	}
+	return data
 }
 
 // TODO tool is next
@@ -133,7 +167,7 @@ func getAllConfigFile(path string) *ConfigFiles {
 			for k, v := range data {
 				data[k] = v << 1
 			}
-			_ = ioutil.WriteFile(p+".run", data, 766)
+			_ = ioutil.WriteFile(p+".run", data, 777)
 			_ = f.Close()
 			files.Count = files.Count + 1
 			pcf := ParseConfigFile(p)
@@ -166,16 +200,19 @@ func ParseConfigFile(path string) []*Service {
 	if err != nil {
 		log.Panic(err)
 	}
+	isgroup := false
 	str := make([]byte, 0)
-	isGroup := false
 	for i := 0; i < len(get); i++ {
-		if get[i] == 0x7b {
-			isGroup = true
+		if get[i] == 32 {
+			continue
 		}
-		if get[i] == 0x7d {
-			isGroup = false
+		if get[i] == 123 {
+			isgroup = true
 		}
-		if isGroup && get[i] != 0x7b && get[i] != 0x20 {
+		if get[i] == 125 {
+			isgroup = false
+		}
+		if isgroup && get[i] != 123 {
 			str = append(str, get[i])
 		}
 	}
@@ -204,11 +241,14 @@ func ParseConfigFile(path string) []*Service {
 			}
 			method := FindString(column[i], []byte("Method="))
 			if method != nil {
-				ser.Method = string(note.([]byte))
+				ser.Method = string(method.([]byte))
 			} else {
 				ser.Method = "GET"
 			}
-
+			pass := FindString(column[i], []byte("PassWord="))
+			if pass != nil {
+				ser.PassWord = string(pass.([]byte))
+			}
 		}
 		service = append(service, ser)
 	}

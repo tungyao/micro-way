@@ -8,11 +8,12 @@ import (
 )
 
 type Service struct {
-	Name   string `service name`
-	DNS    string `localhost:localhost`
-	URL    string `127.0.0.1:80`
-	Method string `method`
-	Note   string `desc`
+	Name     string `service name`
+	DNS      string `localhost:localhost`
+	URL      string `127.0.0.1:80`
+	Method   string `method`
+	Note     string `desc`
+	PassWord string
 }
 
 type ConfigFile struct {

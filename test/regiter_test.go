@@ -6,5 +6,9 @@ import (
 )
 
 func TestRegister(t *testing.T) {
-	r.NewApp()
+	r.StartServer(r.Config{
+		PollingType: r.FILE,
+		Address:     ":6000",
+		File:        "/Users/lala/Github/micro-way/test",
+	})
 }

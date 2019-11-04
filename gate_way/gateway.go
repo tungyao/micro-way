@@ -7,14 +7,16 @@ import (
 )
 
 func StartGateWay() {
-	l, err := net.Listen("tcp", ":80")
+	l, err := net.Listen("tcp", ":7000")
 	if err != nil {
 		log.Panicln(err)
 	}
-
-	l = Limiter(&Config{MaxConn: 2000}, l)
+	l = Limiter(&Config{MaxConn: 3000}, l)
 	l = StartBlackShield(&BlackShieldConfig{}, l).Next()
-	go StartRouter(&WayConfig{})
+	go StartRouter(&WayConfig{RegisterLocation: ":6000"})
 	r := new(RT)
-	_ = http.Serve(l, r.Router())
+	err = http.Serve(l, r.Router())
+	if err != nil {
+		log.Println(err)
+	}
 }
