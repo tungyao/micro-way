@@ -59,6 +59,8 @@ func GetStatusSingleService(serviceName string) (bool, int, *Service) { // 获�
 func SetStatusSingleService(serviceName string) { // 设置单个 服务 状态 , 用户 禁止调用  设置服务状态 返回时延
 
 }
-func FlushScreen() {
+
+// Monitoring service status
+func MonitorService() {
 
 }

@@ -83,7 +83,7 @@ func SplitString(str []byte, p []byte) [][]byte {
 	for i := 0; i < len(str); i++ {
 		if str[i] == p[0] && i < len(str)-len(p) {
 			if len(p) == 1 {
-				return [][]byte{str[:i+1], str[i:]}
+				return [][]byte{str[:i], str[i+1:]}
 			} else {
 				for j := 1; j < len(p); i++ {
 					if str[i+j] != p[j] {

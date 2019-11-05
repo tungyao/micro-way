@@ -14,4 +14,10 @@ URL = http://localhost:80
 Method=POST
 Note = hello wehchat
 }
+{
+ Name=index
+    DNS=index:localhost
+    Type=local
+    Path=/home/www
+}
 #name123asasddasd

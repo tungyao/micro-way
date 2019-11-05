@@ -12,3 +12,6 @@ func TestRegister(t *testing.T) {
 		File:        "/Users/lala/Github/micro-way/test",
 	})
 }
+func TestClient(t *testing.T) {
+	// r.StartClient()
+}

@@ -1,6 +1,7 @@
 package register
 
 import (
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
@@ -9,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"./util"
 	"github.com/tungyao/tjson"
 )
 
@@ -19,6 +21,10 @@ const (
 	REDIS         // 通过redis注册服务
 )
 
+var (
+	containerMap map[string]*Ruler
+)
+
 func StartServer(config Config) {
 	listen, err := net.Listen("tcp", config.Address)
 	if err != nil {
@@ -26,7 +32,7 @@ func StartServer(config Config) {
 	}
 	// 检查配置config的错误
 	checkParameter(&config)
-	containerMap := make(map[string]*Ruler, 0)
+	containerMap = make(map[string]*Ruler, 0)
 	// 根据config类型加载配置文件
 	switch config.PollingType {
 	case FILE:
@@ -58,6 +64,12 @@ func StartServer(config Config) {
 				if n == 0 {
 					_ = nc.Close()
 					return nil
+				}
+				if string(data[:4]) == "====" {
+					ak := clientConn(data[4:n])
+					_, err = nc.Write(ak)
+					err = nc.Close()
+					return err
 				}
 				get := tjson.Decode(data[:n])
 				// LoadSingleService("hello", Ruler{
@@ -110,13 +122,38 @@ func runFile() {
 func Memory() {
 
 }
+func clientConn(data []byte) []byte {
+	two := util.SplitString(data, []byte("*"))
+	if len(two) < 2 {
+		return []byte("you need more parameter")
+	}
+	switch string(two[0]) {
+	case "get":
+		gc := GlobalContainer
+		in := ""
+		if string(two[1]) == "all" {
+			for k, v := range gc.Rulers {
+				in += fmt.Sprintf("%d\t%s\t%v\t%d\n", k, v.Name, v.IsDie, v.Status)
+			}
+			return []byte(in)
+		}
+		b, t, s := GetStatusSingleService(string(two[1]))
+		in = fmt.Sprintf("%s\t%v\t%d\n", s.Name, b, t)
+		return []byte(in)
+	}
+	return data
+}
 func getRestData(url string, method string, body string) []byte {
 	n := &http.Response{}
 	switch method {
 	case "GET":
+
 		n, _ = http.Get(url)
 	case "POST":
 		n, _ = http.Post(url, "application/json", strings.NewReader(body))
+	}
+	if n == nil {
+		return []byte("false")
 	}
 	data, er := ioutil.ReadAll(n.Body)
 	if er != nil {
@@ -249,7 +286,25 @@ func ParseConfigFile(path string) []*Service {
 			if pass != nil {
 				ser.PassWord = string(pass.([]byte))
 			}
+			types := FindString(column[i], []byte("Type="))
+			if types != nil {
+				ser.Type = string(types.([]byte))
+			}
+			path := FindString(column[i], []byte("Path="))
+			if path != nil {
+				ser.Path = string(path.([]byte))
+			}
 		}
+		util.CheckConfig(ser, Service{
+			Name:     "default",
+			DNS:      "",
+			URL:      "",
+			Method:   "POST",
+			Note:     "",
+			PassWord: "",
+			Type:     "proxy",
+			Path:     "/",
+		})
 		service = append(service, ser)
 	}
 	return service

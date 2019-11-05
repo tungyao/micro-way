@@ -14,6 +14,8 @@ type Service struct {
 	Method   string `method`
 	Note     string `desc`
 	PassWord string
+	Type     string
+	Path     string
 }
 
 type ConfigFile struct {

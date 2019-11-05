@@ -89,6 +89,12 @@ func (b *Black) Accept() (net.Conn, error) {
 			SendFlow(a.RemoteAddr().String())
 		}
 	}
+	if len(emptySlice) > 200 {
+		if AccessDefineList[string(util.SplitString([]byte(a.RemoteAddr().String()), []byte(":"))[0])] != 0 {
+			err = a.Close()
+			return nil, err
+		}
+	}
 	return a, err
 }
 
@@ -116,15 +122,29 @@ func loadList(config *BlackShieldConfig) {
 
 // core algorithm
 func BlackShieldAlg(s []string) {
+	fmt.Println("\n\n\n\n\n")
+	fmt.Print("\t\tBLACK LIST IS RUNNING\n------------------------------------\n")
+	for k, _ := range AccessDefineList {
+		fmt.Printf("|\t\t%s\t\t\t\t\t\t\n", k)
+	}
+	fmt.Println("------------------------------------")
+	buf := map[string]int{}
+	for _, v := range emptySlice {
+		buf[v] = buf[v] + 1
+		if buf[v] > 100 {
+			AccessDefineList[v] = AccessDefineList[v] + 1
+		}
+	}
+
 	// for k,v:=range s{
 	// 	fmt.Println(k,v)
 	// }
-	fmt.Println("BLACK LIST IS RUNNING")
 }
 
 // send ip address to algorithm and get threat index
 // we should create a new slice every time ,until the free
 func SendFlow(ip string) {
+	ip = string(util.SplitString([]byte(ip), []byte(":"))[0])
 	if len(emptySlice) <= MonitorPeriosBuf {
 		emptySlice = append(emptySlice, ip)
 	}

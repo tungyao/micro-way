@@ -1,7 +1,9 @@
 package gate_way
 
 import (
+	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -59,29 +61,24 @@ func (rt *RT) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	sendRouter(w, r)
 }
 func sendRouter(w http.ResponseWriter, r *http.Request) {
+
 	n, err := net.Dial("tcp", registerLocation)
-	defer n.Close()
-	w.Header().Set("Content-Type", "application/json")
 	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(501)
 		_, _ = w.Write(template(501))
+		return
 	}
-	data := make([]byte, 2048)
-	nn, err := r.Body.Read(data)
-	_ = r.Body.Close()
+	w.Header().Set("Content-Type", "application/json")
+	data, err := ioutil.ReadAll(r.Body)
+	err = r.Body.Close()
 	if err != nil && err != io.EOF {
-		log.Println("router.go -> 71", err)
+		log.Println("router.go -> 73", err)
 	}
-	_, _ = n.Write(data[:nn])
-
-	data = make([]byte, 4096)
-	nn, err = n.Read(data)
-
-	if err != nil {
-		log.Println("router.go -> 79", err)
-	}
-	// getObj := tjson.Decode(data[:nn])
-	_, _ = w.Write(data[:nn])
+	_, _ = n.Write(data)
+	_, _ = w.Write(getData(n))
+	_ = n.Close()
+	return
 }
 func template(n int) []byte {
 	switch n {
@@ -89,6 +86,31 @@ func template(n int) []byte {
 		return []byte(`{"error":"501"}`)
 	}
 	return []byte(`{"error":"not found"}`)
+}
+func getData(a net.Conn) []byte {
+	out := make([][]byte, 0)
+	o := make([]byte, 0)
+	for {
+		data := make([]byte, 4096)
+		n, err := a.Read(data)
+		out = append(out, data)
+		if n == 0 || err == io.EOF {
+			break
+		}
+	}
+	for _, v := range out {
+		for _, j := range v {
+			if j == 0 {
+				continue
+			}
+			o = append(o, j)
+		}
+	}
+	fmt.Println(string(o))
+	if string(o) == "false" {
+		return template(501)
+	}
+	return o
 }
 
 // Initialize parameters

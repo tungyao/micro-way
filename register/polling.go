@@ -60,7 +60,7 @@ func CheckConfigFile(config Config) {
 				for k, v := range d {
 					d[k] = v << 1
 				}
-				_ = ioutil.WriteFile(path+".run", d, 766)
+				_ = ioutil.WriteFile(path+".run", d, 777)
 			}
 		}
 		return nil

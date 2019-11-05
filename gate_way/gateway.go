@@ -6,14 +6,14 @@ import (
 	"net/http"
 )
 
-func StartGateWay() {
+func StartGateWay(config *Config, shieldConfig *BlackShieldConfig, wayConfig *WayConfig) {
 	l, err := net.Listen("tcp", ":7000")
 	if err != nil {
 		log.Panicln(err)
 	}
-	l = Limiter(&Config{MaxConn: 3000}, l)
-	l = StartBlackShield(&BlackShieldConfig{}, l).Next()
-	go StartRouter(&WayConfig{RegisterLocation: ":6000"})
+	l = Limiter(config, l)
+	l = StartBlackShield(shieldConfig, l).Next()
+	go StartRouter(wayConfig)
 	r := new(RT)
 	err = http.Serve(l, r.Router())
 	if err != nil {

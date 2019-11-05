@@ -1,7 +1,6 @@
 package gate_way
 
 import (
-	"fmt"
 	"net"
 	"sync"
 
@@ -57,7 +56,6 @@ func (l *limiter) Accept() (net.Conn, error) {
 		n := <-FLOW
 		if n != 0 {
 			l.Flow += int64(n)
-			fmt.Println(l.Flow)
 		}
 		<-l.accept
 	}}, nil
