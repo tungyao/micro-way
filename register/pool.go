@@ -16,7 +16,7 @@ func NewTask(f func() error) *Task {
 func (t *Task) Execute() {
 	err := t.f()
 	if err != nil {
-		log.Panic(err)
+		log.Panicln(err)
 	}
 }
 

@@ -31,7 +31,7 @@ func (l *limiter) wait() bool {
 }
 func Limiter(config *Config, listener net.Listener) net.Listener {
 	util.CheckConfig(config, Config{
-		MaxConn:     4096,
+		MaxConn:     2000,
 		MaxBuffFlow: 4096,
 	})
 	FLOW = make(chan int, config.MaxBuffFlow)

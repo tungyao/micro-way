@@ -94,7 +94,6 @@ func StartServer(config Config) {
 						"method": "GET",
 						"name":   "nil",
 					})))
-					err = nc.Close()
 					return err
 				}
 				d, t, s := GetStatusSingleService(get["pass"].(string))
@@ -106,7 +105,6 @@ func StartServer(config Config) {
 						"data":   data,
 					})))
 				}
-				err = nc.Close()
 				return err
 			})
 		}

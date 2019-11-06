@@ -1,7 +1,6 @@
 package gate_way
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -75,9 +74,21 @@ func sendRouter(w http.ResponseWriter, r *http.Request) {
 	if err != nil && err != io.EOF {
 		log.Println("router.go -> 73", err)
 	}
-	_, _ = n.Write(data)
-	_, _ = w.Write(getData(n))
-	_ = n.Close()
+	if n != nil {
+		_, err = n.Write(data)
+		if err != nil {
+			log.Println(err)
+		}
+		_, _ = w.Write(getData(n))
+		err = n.Close()
+		if err != nil {
+			log.Panicln(err)
+		}
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(501)
+	_, _ = w.Write(template(501))
 	return
 }
 func template(n int) []byte {
@@ -106,7 +117,6 @@ func getData(a net.Conn) []byte {
 			o = append(o, j)
 		}
 	}
-	fmt.Println(string(o))
 	if string(o) == "false" {
 		return template(501)
 	}

@@ -9,7 +9,7 @@ import (
 func StartGateWay(config *Config, shieldConfig *BlackShieldConfig, wayConfig *WayConfig) {
 	l, err := net.Listen("tcp", ":7000")
 	if err != nil {
-		log.Panicln(err)
+		log.Panicln("12", err)
 	}
 	l = Limiter(config, l)
 	l = StartBlackShield(shieldConfig, l).Next()

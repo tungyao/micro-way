@@ -91,6 +91,7 @@ func (b *Black) Accept() (net.Conn, error) {
 	}
 	if len(emptySlice) > 200 {
 		if AccessDefineList[string(util.SplitString([]byte(a.RemoteAddr().String()), []byte(":"))[0])] != 0 {
+			fmt.Println("你是黑名单")
 			err = a.Close()
 			return nil, err
 		}
