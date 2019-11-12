@@ -2,7 +2,6 @@ package gate_way
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"log"
 	"net"
@@ -95,11 +94,12 @@ func (b *Black) Accept() (net.Conn, error) {
 	//		return nil, err
 	//	}
 	//}
-	return a,err
+	return a, err
 }
-func (b *Black)Close()  error {
+func (b *Black) Close() error {
 	return b.l.Close()
 }
+
 // read black list from local file
 func loadList(config *BlackShieldConfig) {
 	f, err := os.OpenFile(config.LoadBlackPath, os.O_CREATE|os.O_RDONLY, 777)
@@ -124,12 +124,12 @@ func loadList(config *BlackShieldConfig) {
 
 // core algorithm
 func BlackShieldAlg(s []string) {
-	fmt.Println("\n\n\n\n\n")
-	fmt.Print("\t\tBLACK LIST IS RUNNING\n------------------------------------\n")
-	for k, _ := range AccessDefineList {
-		fmt.Printf("|\t\t%s\t\t\t\t\t\t\n", k)
-	}
-	fmt.Println("------------------------------------")
+	//fmt.Println("\n\n\n\n\n")
+	//fmt.Print("\t\tBLACK LIST IS RUNNING\n------------------------------------\n")
+	//for k, _ := range AccessDefineList {
+	//	fmt.Printf("|\t\t%s\t\t\t\t\t\t\n", k)
+	//}
+	//fmt.Println("------------------------------------")
 	buf := map[string]int{}
 	for _, v := range emptySlice {
 		buf[v] = buf[v] + 1

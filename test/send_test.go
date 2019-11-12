@@ -19,7 +19,7 @@ func TestHttp(t *testing.T) {
 		fmt.Fprint(writer, string(data))
 
 	})
-	http.ListenAndServe(":80", nil)
+	http.ListenAndServe(":82", nil)
 }
 
 func TestSend(t *testing.T) {
@@ -31,11 +31,11 @@ func TestSend(t *testing.T) {
 	fmt.Println(data)
 }
 func TestNet(t *testing.T) {
-	a, _ := net.Listen("tcp", ":80")
+	a, _ := net.Listen("tcp", ":82")
 	for {
 		c, _ := a.Accept()
 		data := make([]byte, 0)
-		for i := 0; i < 2000; i++ {
+		for i := 0; i < 10; i++ {
 			data = append(data, 'a')
 		}
 		c.Write(data)

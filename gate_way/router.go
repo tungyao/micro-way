@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"src/github.com/tungyao/tjson"
 
 	"./util"
 )
@@ -32,7 +33,7 @@ type RT struct {
 var (
 	GLOBAL_ALL_CONNECT int
 	FPOOL              *FPool
-	registerLocation   string
+	RegisterLocation   string
 	timeOut            int
 	isCache            bool
 	cacheTime          int
@@ -48,7 +49,7 @@ func StartRouter(config *WayConfig) {
 		IsCache:          true,
 		CacheTime:        10,
 	})
-	util.CheckConfig(&registerLocation, config.RegisterLocation)
+	util.CheckConfig(&RegisterLocation, config.RegisterLocation)
 	util.CheckConfig(&timeOut, config.TimeOut)
 	util.CheckConfig(&isCache, config.IsCache)
 	util.CheckConfig(&cacheTime, config.CacheTime)
@@ -57,18 +58,40 @@ func (rt *RT) Router() http.Handler {
 	return rt
 }
 func (rt *RT) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	op:=r.URL.Query().Get("wechat")
-	if op != "" {
-		sendQuery(w,op,r)
-	}else {
-		sendRouter(w, r)
+	op := r.URL.Query().Get("pass")
+	if op == "" {
+		w.WriteHeader(503)
+		w.Header().Set("content-type", "application/json")
+		w.Write(template(503))
+		return
+	}
+	key := CGet(op)
+	if key != "" {
+		obj := tjson.Decode([]byte(key))
+		if obj["ok"] != "yes" {
+			w.WriteHeader(503)
+			w.Header().Set("content-type", "application/json")
+			w.Write(template(503))
+			return
+		}
+	} else {
+		go Hash.Set(op, key, 600)
 	}
 }
-func sendQuery(w http.ResponseWriter,op string,r *http.Request)  {
+func formatUrl(s string) string {
+	b := []byte(s)
+	for k, v := range b {
+		if v == 35 {
+			b[k] = 58
+		}
+	}
+	return string(b)
+}
+func sendQuery(w http.ResponseWriter, op string, r *http.Request) {
 
 }
 func sendRouter(w http.ResponseWriter, r *http.Request) {
-	n, err := net.Dial("tcp", registerLocation)
+	n, err := net.Dial("tcp", RegisterLocation)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(501)
@@ -82,7 +105,7 @@ func sendRouter(w http.ResponseWriter, r *http.Request) {
 		log.Println("router.go -> 73", err)
 	}
 	_, _ = n.Write(data)
-	_, _ = w.Write(getData(n))
+	_, _ = w.Write(GetData(n))
 	_ = n.Close()
 	return
 }
@@ -93,7 +116,7 @@ func template(n int) []byte {
 	}
 	return []byte(`{"error":"not found"}`)
 }
-func getData(a net.Conn) []byte {
+func GetData(a net.Conn) []byte {
 	out := make([][]byte, 0)
 	o := make([]byte, 0)
 	for {

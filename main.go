@@ -26,9 +26,6 @@ func init() {
 func main() {
 	flag.Parse()
 	if create {
-		// if err != nil {
-		// 	fmt.Println(26,err)
-		// }
 		f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 777)
 		if err != nil {
 			fmt.Println(30, err)
@@ -71,42 +68,7 @@ func main() {
 	// 	MaxCap:           0,
 	// })
 }
-func ParseConfigFile(path string) {
-	f, err := os.Open(path)
-	defer f.Close()
-	if err != nil {
-		log.Println("open config file error", err)
-	}
-	stat, _ := f.Stat()
-	get := make([]byte, stat.Size())
-	_, err = f.Read(get)
-	if err != nil {
-		log.Panic(err)
-	}
-	isgroup := false
-	str := make([]byte, 0)
-	for i := 0; i < len(get); i++ {
-		if get[i] == 32 {
-			continue
-		}
-		if get[i] == 123 {
-			isgroup = true
-		}
-		if get[i] == 125 {
-			isgroup = false
-		}
-		if isgroup && get[i] != 123 {
-			str = append(str, get[i])
-		}
-	}
-	group := SplitString(str, []uint8{13, 10})
-	fmt.Println(len(group))
-	// 到这一部可以开始解析数据到出来
-	for _, v := range group {
-		column := SplitString(v, []uint8{13, 10})
-		fmt.Println(column)
-	}
-}
+
 func FindString(v interface{}, p []byte) interface{} {
 	// switch v.(type) {
 	// case []byte:

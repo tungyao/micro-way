@@ -52,7 +52,7 @@ func StartServer(config Config) {
 	// 开启线程池
 	//pool := NewPool(config.MaxCap)
 	//pool.Run()
-	go StartPolling(10,config)
+	go StartPolling(10, config)
 
 	for {
 		con, err := listen.Accept()
@@ -61,7 +61,7 @@ func StartServer(config Config) {
 		}
 		data := make([]byte, 4098) // 默认读取大小为2kb
 		n, err := con.Read(data)
-		if n == 0|| err!=nil {
+		if n == 0 || err != nil {
 			_ = con.Close()
 			log.Fatalln(err)
 		}
@@ -86,30 +86,43 @@ func StartServer(config Config) {
 		if get["pass"] == nil {
 			_, err = con.Write([]byte(tjson.Encode(map[string]interface{}{
 				"ok":     "no",
-				"msg":    "get pass is failed",
-				"is_die": true,
-				"status": -1,
-				"url":    "nil",
-				"method": "GET",
-				"name":   "nil",
+				"status": -2,
 			})))
 			err = con.Close()
-			fmt.Println(123)
 			continue
 		}
 		d, t, s := GetStatusSingleService(get["pass"].(string))
-		if d {
-			data := getRestData(s.URL, strings.ToUpper(s.Method), string(data[:n]))
+		if t == -2 {
 			_, err = con.Write([]byte(tjson.Encode(map[string]interface{}{
-				"ok":     "yes",
+				"ok":     "no",
 				"status": t,
-				"data":   data,
+			})))
+			err = con.Close()
+			continue
+		}
+		if d {
+			_, err = con.Write([]byte(tjson.Encode(map[string]interface{}{
+				"ok":       "yes",
+				"url":      formatUrl(s.URL),
+				"method":   s.Method,
+				"name":     s.Name,
+				"password": s.PassWord,
+				"path":     s.Path,
 			})))
 		}
 		err = con.Close()
+		continue
 	}
 }
-
+func formatUrl(s string) string {
+	b := []byte(s)
+	for k, v := range b {
+		if v == 58 {
+			b[k] = 35
+		}
+	}
+	return string(b)
+}
 func runFile() {
 
 }
@@ -291,11 +304,11 @@ func ParseConfigFile(path string) []*Service {
 		}
 		util.CheckConfig(ser, Service{
 			Name:     "default",
-			DNS:      "",
-			URL:      "",
+			DNS:      "/",
+			URL:      "/",
 			Method:   "POST",
-			Note:     "",
-			PassWord: "",
+			Note:     "/",
+			PassWord: "/",
 			Type:     "proxy",
 			Path:     "/",
 		})
