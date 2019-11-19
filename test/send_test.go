@@ -12,6 +12,8 @@ import (
 
 func TestHttp(t *testing.T) {
 	http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+		fmt.Println(request.URL.String())
+		fmt.Println(request.Method)
 		data := make([]byte, 0)
 		for i := 0; i < 10; i++ {
 			data = append(data, 'a')
@@ -19,7 +21,7 @@ func TestHttp(t *testing.T) {
 		fmt.Fprint(writer, string(data))
 
 	})
-	http.ListenAndServe(":82", nil)
+	http.ListenAndServe(":80", nil)
 }
 
 func TestSend(t *testing.T) {

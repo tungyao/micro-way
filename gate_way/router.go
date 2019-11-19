@@ -74,6 +74,14 @@ func (rt *RT) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			w.Write(template(503))
 			return
 		}
+		w.Header().Set("Cache-Control", "must-revalidate, no-store")
+		w.Header().Set("Content-Type", " text/html;charset=UTF-8")
+		w.Header().Set("Location", formatUrl(obj["url"].(string))+r.RequestURI) //跳转地址设置
+		w.WriteHeader(301)                                                      //关键在这里！
+		//http.Redirect(w,r,formatUrl(obj["url"].(string))+r.RequestURI,302)
+		//w.WriteHeader(302)
+		//fmt.Println(formatUrl(obj["url"].(string)))
+		//w.Header().Set("Location", formatUrl(obj["url"].(string)))
 	} else {
 		go Hash.Set(op, key, 600)
 	}
@@ -113,6 +121,8 @@ func template(n int) []byte {
 	switch n {
 	case 501:
 		return []byte(`{"error":"501"}`)
+	case 503:
+		return []byte(`{"error":"503"}`)
 	}
 	return []byte(`{"error":"not found"}`)
 }
